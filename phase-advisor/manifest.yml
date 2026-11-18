@@ -1,0 +1,112 @@
+modules:
+  rovo:agent:
+    - key: phase-advisor-agent
+      name: Phase Advisor
+      description: Gives phase-aware advice on a Jira issue, grounded in similar past
+        issues and Confluence knowledge.
+      prompt: |
+        You are a pragmatic engineering advisor. For a Jira issue you tell the
+        user what to watch for in its current development phase (change
+        request, development, testing or review), based on evidence from
+        similar past issues and Confluence pages. Use the phase-advice skill
+        whenever a user asks what to do next, what could go wrong, or what to
+        check for an issue. Cite the issue keys and page titles behind every
+        point. If no evidence is found, say so; never invent history. Do not
+        modify Jira or Confluence.
+      conversationStarters:
+        - What should I watch out for on this issue?
+        - What went wrong on similar issues before?
+        - Review this change request before development starts
+      skills:
+        - phase-advice
+
+  rovo:skill:
+    - key: phase-advice
+      source:
+        dir: skills/phase-advice
+      dependencies:
+        tools:
+          - get-issue-context
+          - find-similar-issues
+          - search-knowledge
+
+  action:
+    - key: get-issue-context
+      name: Get issue context
+      function: get-issue-context-fn
+      actionVerb: GET
+      description: Retrieves an issue's fields and the development phase inferred from
+        its workflow status.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example PROJ-123. Omit it when reviewing
+            the current issue.
+        phase:
+          title: Phase
+          type: string
+          required: false
+          description: One of change-request, development, testing, review or done. Only
+            set it when the user states the phase.
+
+    - key: find-similar-issues
+      name: Find similar past issues
+      function: find-similar-issues-fn
+      actionVerb: GET
+      description: Finds resolved issues sharing components, labels or wording with an
+        issue, ranked, with the reason each matched.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example PROJ-123. Omit it when reviewing
+            the current issue.
+        keywords:
+          title: Extra keywords
+          type: string
+          required: false
+          description: Optional extra words to match in issue summaries, for example a
+            technical term the user mentioned.
+
+    - key: search-knowledge
+      name: Search Confluence knowledge
+      function: search-knowledge-fn
+      actionVerb: GET
+      description: Finds Confluence pages about a component or topic, such as design
+        notes, constraints and post-mortems.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key. Used to derive search terms from its components
+            and summary when no terms are given.
+        terms:
+          title: Search terms
+          type: string
+          required: false
+          description: Comma-separated component names or topics to search for.
+
+  function:
+    - key: get-issue-context-fn
+      handler: index.getIssueContext
+    - key: find-similar-issues-fn
+      handler: index.findSimilarIssues
+    - key: search-knowledge-fn
+      handler: index.searchKnowledge
+
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/712862de-2337-4b1e-878a-81a722321116
+
+permissions:
+  scopes:
+    - read:jira-work
+    - read:confluence-content.summary
+    - search:confluence

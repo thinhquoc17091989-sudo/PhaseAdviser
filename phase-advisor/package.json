@@ -1,0 +1,16 @@
+{
+  "name": "phase-advisor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forge Rovo agent that gives phase-aware advice on Jira issues, grounded in past issues and Confluence knowledge.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "@forge/api": "^7.0.2"
+  }
+}
